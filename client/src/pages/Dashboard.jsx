@@ -46,7 +46,11 @@ const SolvedRing = ({ solved, total }) => {
           </linearGradient>
         </defs>
       </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
         <div className="mono" style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{solved}</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>of {total}</div>
       </div>
@@ -88,7 +92,11 @@ const Heatmap = ({ submissions }) => {
           <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {week.map(day => (
               <div key={day.key} title={`${day.key}: ${day.count}`}
-                style={{ width: 11, height: 11, borderRadius: 2, background: getColor(day.count), border: '1px solid rgba(255,255,255,0.03)' }} />
+                style={{
+                  width: 11, height: 11, borderRadius: 2,
+                  background: getColor(day.count),
+                  border: '1px solid rgba(255,255,255,0.03)',
+                }} />
             ))}
           </div>
         ))}
@@ -122,9 +130,16 @@ const Dashboard = () => {
   const [submissions, setSubmissions] = useState([]);
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     Promise.all([api.get('/submissions'), api.get('/problems')])
@@ -139,49 +154,66 @@ const Dashboard = () => {
     ? Math.round((stats.accepted / stats.totalSubmissions) * 100) : 0;
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 1060 }}>
-      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 28 }}>
+    <div style={{
+      padding: isMobile ? '20px 16px' : '32px 36px',
+      maxWidth: 1060,
+    }}>
+      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
         <div className="mono label" style={{ color: 'var(--accent)', marginBottom: 6 }}>
           {greet}
         </div>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+        <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
           {user?.name}
         </h1>
       </motion.div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+      {/* Stat cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+        gap: 10, marginBottom: 14,
+      }}>
         {[
-          { icon: CheckCircle2, label: 'Problems Solved', value: solvedCount, color: 'var(--accent)' },
-          { icon: TrendingUp, label: 'Acceptance Rate', value: `${acceptanceRate}%`, color: 'var(--green)' },
+          { icon: CheckCircle2, label: 'Solved', value: solvedCount, color: 'var(--accent)' },
+          { icon: TrendingUp, label: 'Acceptance', value: `${acceptanceRate}%`, color: 'var(--green)' },
           { icon: BookOpen, label: 'Submissions', value: stats?.totalSubmissions || 0, color: 'var(--text-secondary)' },
           { icon: Zap, label: 'XP Earned', value: xp, color: 'var(--amber)' },
         ].map((item, i) => (
           <motion.div key={item.label}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="card" style={{ padding: '18px 20px' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+            className="card" style={{ padding: '16px 18px' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>{item.label}</div>
-                <div className="mono" style={{ fontSize: 26, fontWeight: 700, color: item.color, lineHeight: 1 }}>{item.value}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>{item.label}</div>
+                <div className="mono" style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: item.color, lineHeight: 1 }}>{item.value}</div>
               </div>
-              <div style={{ padding: 8, borderRadius: 8, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-                <item.icon size={15} color={item.color} />
+              <div style={{ padding: 7, borderRadius: 7, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <item.icon size={14} color={item.color} />
               </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 12, marginBottom: 12 }}>
+      {/* Progress + Recent submissions */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '1.1fr 1fr',
+        gap: 12, marginBottom: 12,
+      }}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-          className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
+          className="card" style={{ padding: isMobile ? 18 : 24 }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 16 : 24,
+            alignItems: isMobile ? 'center' : 'flex-start',
+            marginBottom: 20,
+          }}>
             <SolvedRing solved={solvedCount} total={totalProblems} />
-            <div style={{ flex: 1 }}>
-              <div className="label" style={{ marginBottom: 16 }}>Progress by difficulty</div>
+            <div style={{ flex: 1, width: isMobile ? '100%' : 'auto' }}>
+              <div className="label" style={{ marginBottom: 14 }}>Progress by difficulty</div>
               <ProgressBar label="Easy" solved={stats?.solvedByDifficulty?.Easy || 0} total={20} color="var(--green)" />
               <ProgressBar label="Medium" solved={stats?.solvedByDifficulty?.Medium || 0} total={21} color="var(--amber)" />
               <ProgressBar label="Hard" solved={stats?.solvedByDifficulty?.Hard || 0} total={9} color="var(--red)" />
@@ -207,8 +239,8 @@ const Dashboard = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-          className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          className="card" style={{ padding: isMobile ? 18 : 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div className="label">Recent submissions</div>
             <Link to="/submissions" style={{ fontSize: 12, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 3 }}>
               View all <ArrowRight size={11} />
@@ -252,9 +284,10 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
+      {/* Heatmap */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-        className="card" style={{ padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        className="card" style={{ padding: isMobile ? 18 : 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div className="label">Submission activity</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             {submissions.length} submissions this year

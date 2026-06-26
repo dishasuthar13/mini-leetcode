@@ -8,6 +8,13 @@ const Leaderboard = () => {
   const { user } = useAuth();
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     api.get('/leaderboard').then(r => setLeaders(r.data)).finally(() => setLoading(false));
@@ -16,22 +23,29 @@ const Leaderboard = () => {
   const myRank = leaders.findIndex(l => l.userId === user?._id) + 1;
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 720 }}>
-      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 28 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ padding: isMobile ? '20px 16px' : '32px 36px', maxWidth: 720 }}>
+      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: 12 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{ width: 32, height: 32, background: 'var(--amber-dim)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{
+                width: 32, height: 32,
+                background: 'var(--amber-dim)', border: '1px solid rgba(245,158,11,0.2)',
+                borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
                 <Trophy size={15} color="var(--amber)" />
               </div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>Leaderboard</h1>
+              <h1 style={{ fontSize: isMobile ? 20 : 22, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.4px' }}>
+                Leaderboard
+              </h1>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Ranked by XP earned from solved problems</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Ranked by XP earned</p>
           </div>
           {myRank > 0 && (
             <div style={{
               background: 'var(--accent-dim)', border: '1px solid var(--accent-border)',
               borderRadius: 10, padding: '10px 16px', textAlign: 'center',
+              alignSelf: isMobile ? 'flex-start' : 'auto',
             }}>
               <div className="label" style={{ color: 'var(--accent)', marginBottom: 4 }}>Your rank</div>
               <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>#{myRank}</div>
@@ -42,7 +56,9 @@ const Leaderboard = () => {
 
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[...Array(8)].map((_, i) => <div key={i} className="skeleton" style={{ height: 56, borderRadius: 10 }} />)}
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="skeleton" style={{ height: 56, borderRadius: 10 }} />
+          ))}
         </div>
       ) : leaders.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
@@ -52,17 +68,28 @@ const Leaderboard = () => {
         </div>
       ) : (
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '48px 1fr 100px 100px', padding: '10px 18px', borderBottom: '1px solid var(--border)', gap: 12 }}>
-            {['Rank', 'Developer', 'Solved', 'XP'].map(h => <span key={h} className="label">{h}</span>)}
-          </div>
+          {!isMobile && (
+            <div style={{
+              display: 'grid', gridTemplateColumns: '48px 1fr 100px 100px',
+              padding: '10px 18px', borderBottom: '1px solid var(--border)', gap: 12,
+            }}>
+              {['Rank', 'Developer', 'Solved', 'XP'].map(h => (
+                <span key={h} className="label">{h}</span>
+              ))}
+            </div>
+          )}
           {leaders.map((l, i) => {
             const isMe = l.userId === user?._id;
+            const rankColor = i === 0 ? 'var(--amber)' : i === 1 ? 'var(--text-secondary)' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
+            const rankLabel = i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `#${l.rank}`;
             return (
               <motion.div key={l.userId}
                 initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                 style={{
-                  display: 'grid', gridTemplateColumns: '48px 1fr 100px 100px',
-                  alignItems: 'center', padding: '14px 18px',
+                  display: isMobile ? 'flex' : 'grid',
+                  gridTemplateColumns: isMobile ? undefined : '48px 1fr 100px 100px',
+                  alignItems: 'center',
+                  padding: isMobile ? '12px 16px' : '14px 18px',
                   borderBottom: '1px solid var(--border)',
                   gap: 12,
                   background: isMe ? 'var(--accent-dim)' : 'transparent',
@@ -72,15 +99,12 @@ const Leaderboard = () => {
                 onMouseEnter={e => { if (!isMe) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                 onMouseLeave={e => { if (!isMe) e.currentTarget.style.background = 'transparent'; }}
               >
-                <span className="mono" style={{
-                  fontSize: 13, fontWeight: 700,
-                  color: i === 0 ? 'var(--amber)' : i === 1 ? 'var(--text-secondary)' : i === 2 ? '#CD7F32' : 'var(--text-muted)',
-                }}>
-                  {i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `#${l.rank}`}
+                <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: rankColor, flexShrink: 0, minWidth: isMobile ? 32 : 'auto' }}>
+                  {rankLabel}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: isMobile ? 1 : 'auto' }}>
                   <div style={{
-                    width: 30, height: 30, borderRadius: 8,
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
                     background: isMe ? 'var(--accent)' : 'var(--bg-elevated)',
                     border: `1px solid ${isMe ? 'var(--accent)' : 'var(--border)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -91,10 +115,19 @@ const Leaderboard = () => {
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{l.name}</div>
                     {isMe && <div className="label" style={{ color: 'var(--accent)' }}>You</div>}
+                    {isMobile && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {l.solvedCount} solved
+                      </div>
+                    )}
                   </div>
                 </div>
-                <span className="mono" style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>{l.solvedCount}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                {!isMobile && (
+                  <span className="mono" style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    {l.solvedCount}
+                  </span>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
                   <Zap size={12} color="var(--amber)" />
                   <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>{l.xp}</span>
                 </div>
